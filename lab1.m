@@ -57,38 +57,76 @@ ylabel('ry[k]')
 
 %%
 clear all; close all;
-%Lowpass high degree
+%%%%%%%%%%%Lowpass high degree%%%%%%%%%%%%%%
 N = 2^10;
+%Insignal
 wg_noise = randn(1, N);                               %vitt brus 
-wg_noisefreq = fft(wg_noise, N);                      %bruset i frekvensdomï¿½n
+wg_noisefreq = fft(wg_noise, N);                      %bruset i frekvensdomän
+
+%Till plott
 theta_axis = linspace(0,1,N);                         %for plotting
 R0 = 1;
 time_axis = linspace(0,1,N);
-
 Ts = 1;                                                 %Step for the vectos
 nn = ((-N)/2)+1:Ts:(N)/2;                               %Integer vector for plotting
-ff= linspace(0,1,N); 
+ff= linspace(0,1,N);
+k_axis = (-N+1:N-1); %Måste ha detta pga dubbelsidig ACF
+freq_axis_dubble = linspace(0,1,2*N-1); %Måste ha detta pga dubbelsidig ACF
 
-[b, a] = butter(25, 0.2);                       %filter
-H_hd_lp = butter(25,0.2);                       %filter?
+%High degree filter 
+[b, a] = butter(25, 0.4);  %Butterfilter med cut off 0.2
+                
 
-Y_hd_lp = filter(b, a, wg_noisefreq);           %filtrerad utsignal frekvensdomän
-y_hd_lp = ifft(Y_hd_lp);                        %filrerad utsignal tidsdomän
+%%%%%%%%%Filtered output
+%Tidsdomän
+y_hd_lp = filter(b, a, wg_noise);           %filtrerad utsignal tidsdomän
+%Frekvensdomän
+Y_hd_lp = fft(y_hd_lp);                        %filrerad Hz
 
-Ry_hd_lp = abs(H_hd_lp).^2;
-ry_hd_lp= ifft(Ry_hd_lp);
+%%%%%%%%%ESTIMERING
+%ACF
+ACF_est = ACF_two_sided(y_hd_lp, N);
 
-ry_hd_lp_est = ACF_est(y_hd_lp, N);
-Ry_hd_lp_est = abs(fft(ry_hd_lp_est));
+%PSD
+PSD_est = abs(fft(ACF_est));
+freq_axis_dubble = linspace(0,1,2*N-1);
+%ACF
+%ry_hd_lp= ifft(Ry_hd_lp);
+
+%ry_hd_lp_est = ACF_est(y_hd_lp, N);
+%Ry_hd_lp_est = abs(fft(ry_hd_lp_est));
+
+%%%%%%%%%TEORETISK
+%ACF_ter
+theta_c = 2*0.2; %ger cutoff på 0,2
+ACF_ter = theta_c*sinc(theta_c*nn);
+
+%PSD_ter
+PSD_ter = abs(fft(ACF_ter));
 
 %figure(2)
 %plot(nn, abs(y_hd_lp))
-figure(3)
-plot(ff, Ry_hd_lp)
-figure(4)
-plot(nn, ry_hd_lp_est)
-figure(5)
-plot(ff, Ry_hd_lp_est)
+%figure(3)
+%plot(ff, Ry_hd_lp)
 
+%%%%%%%%%%%Plottar HIGH DEGRE
+%ACF_est PLOT
+figure(4)
+stem(k_axis, ACF_est)
+xlim([-20, 20])
+title('Estimerad ACF');
+
+%PSD_est PLOT
+figure(5)
+plot(freq_axis_dubble, PSD_est)
+title('Estimerad PSD')
+
+%ACF_ter PLOT
+figure(6)
+stem(nn, ACF_ter)
+xlim([-20, 20])
+
+figure(7) 
+plot(ff, PSD_ter)
 
 
